@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+  
+    /* Define the styles for the cool button */
+    .cool-button {
+      background: linear-gradient(to right, #4CAF50, #FFC107);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      animation: cool-button-animation 2s linear infinite;
+      background-size: 200% auto;
+    }
+  
+    /* Define the animation for the cool button */
+    @keyframes cool-button-animation {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+  
+    /* Define the styles for the unique button */
+    .unique-button {
+      position: relative;
+      display: inline-block;
+      background-color: #4e54c8;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 50px;
+      text-transform: uppercase;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      z-index: 1;
+    }
+  
+    .unique-button:before {
+      content: "";
+      position: absolute;
+      top: -20px;
+      left: -20px;
+      right: -20px;
+      bottom: -20px;
+      background-image: url(''); /* Add your blur background image here */
+      filter: blur(10px);
+      z-index: -1;
+    }
+  
+    .unique-button:hover:before {
+      filter: blur(20px);
+    }
+  </style>
+  
+  <div class="flex justify-center">
+    <button id="start" class="btn my-5 cool-button">Start stream</button>
+  </div>
+  
+  <div class="flex justify-center">
+    <video id="stream" autoplay class="hidden m-5 rounded-xl border-8 border-primary"></video>
+  </div>
+  
+  <div class="hidden" id="return_div">
+    <div class="flex justify-center my-5">
+      <h1 class="text-2xl">Stream Preview:</h1>
+    </div>
+    <div class="flex justify-center">
+      <img id="return" class="rounded-xl border-8 border-primary/50"></img>
+    </div>
+  </div>
+  
+  <div class="flex justify-center my-5 button-container">
+    <button id="stop" class="btn hidden cool-button">Stop stream</button>
+    <a href="/new_room"><button id="new_room" class="btn m-5 unique-button">New public room</button></a>
+    <a href="/join_room"><button id="join_room" class="btn m-5 unique-button">Join room</button></a>
+  </div>
+  
+    <script>
+        const start = document.getElementById('start');
+        const stop = document.getElementById('stop');
+        const return_img = document.getElementById('return_div');
+        let intervalId;
+        let streamin;
+        let stream_return;
+        let localStream;
+    
+        start.onclick = function() {
+            start.classList.add('hidden');
+            stop.classList.remove('hidden');
+            const video_element = document.getElementById('stream');
+            return_img.classList.remove('hidden');
+            video_element.classList.remove('hidden');
+    
+            streamin = new WebSocket('ws://' + window.location.host + '/ws/stream/base/');
+            streamin.onopen = function() {
+                console.log('WebSocket connection established.');
+                navigator.mediaDevices.getUserMedia({ video: true }).then(function(mediaStream) {
+                    localStream = mediaStream;
+                    const video = document.getElementById('stream');
+                    video.srcObject = mediaStream;
+                    intervalId = setInterval(function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth/4;
+                        canvas.height = video.videoHeight/4;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const image = canvas.toDataURL();
+                        streamin.send(JSON.stringify({ image: image }));
+                    }, 30);
+                });
+            };
+            
+            stream_return = new WebSocket('ws://' + window.location.host + '/ws/watch/base/');
+            streamin.onmessage = function(event) {
+                console.log('WebSocket message received.');
+                data_json = JSON.parse(event.data);
+                const return_vid = document.getElementById('return');
+                return_vid.src = data_json['image'];
+            };
+        };
+        stop.onclick = function() {
+            start.classList.remove('hidden');
+            stop.classList.add('hidden');
+            const video_element = document.getElementById('stream');
+            video_element.classList.add('hidden');
+            return_img.classList.add('hidden');
+            clearInterval(intervalId);
+            streamin.close();
+            stream_return.close();
+            localStream.getTracks().forEach(function(track) {
+                track.stop();
+            });
+        };
+    </script>
+    
+{% endblock content %}
