@@ -5,7 +5,9 @@ video stream webpage
 - Start a new video stream by creating a new room with a unique code.
 - Join an existing video stream by entering the room code in the URL.
 - Stream live video to other users in real-time.
-- Watch live video streams from other users in real-time.
+- Watch live
+- ![Screenshot 2023-06-22 at 10 55 37 PM](https://github.com/Drizer909/Video_stream/assets/100469278/c2312d20-6072-45f3-8e6f-79c9461068b3)
+ video streams from other users in real-time.
 
 ## Technologies & Frameworks Used
 - Python
